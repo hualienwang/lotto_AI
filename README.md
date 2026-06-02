@@ -38,6 +38,28 @@ python app.py
 
 應用將運行在 `http://localhost:5000`
 
+## 部署到 Vercel (推薦)
+
+### 前置條件
+
+1. 安裝 [Vercel CLI](https://vercel.com/download): `npm install -g vercel`
+2. 或者將項目推送至 GitHub 並在 Vercel 控制台導入。
+
+### 部署步驟 (使用 CLI)
+
+1. 在項目根目錄運行：
+   ```bash
+   vercel
+   ```
+2. 按照提示完成部署。
+
+### 部署步驟 (使用 GitHub)
+
+1. 將代碼推送到 GitHub 倉庫。
+2. 登入 [Vercel](https://vercel.com/) 並點擊 **Add New** > **Project**。
+3. 導入您的 GitHub 倉庫。
+4. Vercel 會自動識別 `vercel.json` 並進行部署。
+
 ## 部署到 Render.com
 
 ### 前置條件
@@ -124,9 +146,12 @@ lotto_AI/
 
 ### 數據持久化
 
-Render.com 的應用實例使用臨時文件系統。SQLite 數據庫文件可能會在應用重啟時丟失。建議遷移至：
-- PostgreSQL（Render 原生支持）
-- 雲存儲服務（如 AWS S3）
+Vercel 與 Render.com 的應用實例均使用臨時/唯讀文件系統。SQLite 數據庫文件（`lotto-539.db`）雖然會被包含在部署中，但**在運行時所做的任何修改（如手動新增記錄）都不會被永久儲存**，且會在應用重啟或更新時丟失。
+
+**建議方案：**
+1. **外部數據庫 (推薦):** 遷移至 Vercel Postgres、Neon 或 Supabase 等雲端數據庫。
+2. **靜態更新:** 在本地修改 `lotto-539.db` 後，再次推送代碼觸發部署。
+3. **雲存儲:** 將數據庫文件存放在 AWS S3 或 Google Cloud Storage。
 
 ### 環境變量
 
