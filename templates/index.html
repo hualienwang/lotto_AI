@@ -99,6 +99,32 @@
         color: var(--muted);
         font: 15px/1.7 "Microsoft JhengHei", sans-serif;
       }
+      button#fetch-history-btn {
+        margin-top: 24px;
+        padding: 14px 22px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        color: var(--ink);
+        font: 700 16px/1.3 "Microsoft JhengHei", sans-serif;
+        cursor: pointer;
+        transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+      }
+      button#fetch-history-btn:hover {
+        transform: translateY(-2px);
+        border-color: var(--gold);
+        box-shadow: 0 14px 30px rgba(32,32,22,.1);
+      }
+      button#fetch-history-btn:disabled {
+        opacity: .55;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .fetch-status {
+        margin-top: 12px;
+        color: var(--green);
+        font: 15px/1.6 "Microsoft JhengHei", sans-serif;
+      }
       @media (max-width: 760px) {
         main { align-content: start; }
         .nav-grid { grid-template-columns: 1fr; }
@@ -112,6 +138,8 @@
         <p class="eyebrow">Lotto 539 Console</p>
         <h1>今彩539<br>開獎系統</h1>
         <p class="deck">整理歷史開獎、手動補登資料，並快速產生參考預測號碼。</p>
+        <button id="fetch-history-btn" type="button">抓取今彩539歷史資料</button>
+        <p id="fetch-status" class="fetch-status" aria-live="polite"></p>
       </section>
       <nav class="nav-grid" aria-label="主功能">
         <a href="/history.html"><span class="mark">歷</span><span><h2>歷次開獎記錄</h2><p>查詢期次、號碼分布與開出次數排序。</p></span></a>
@@ -119,5 +147,32 @@
         <a href="/manual.html"><span class="mark">錄</span><span><h2>手動輸入開獎</h2><p>新增或覆蓋指定期次的開獎資料。</p></span></a>
       </nav>
     </main>
+    <script>
+      const fetchBtn = document.getElementById('fetch-history-btn');
+      const statusText = document.getElementById('fetch-status');
+
+      fetchBtn.addEventListener('click', async () => {
+        fetchBtn.disabled = true;
+        statusText.textContent = '正在抓取歷史資料，請稍候...';
+
+        try {
+          const response = await fetch('/api/fetch-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            statusText.textContent = result.message;
+          } else {
+            statusText.textContent = '抓取失敗：' + result.message;
+          }
+        } catch (error) {
+          statusText.textContent = '伺服器連線失敗，請稍後再試。';
+        } finally {
+          fetchBtn.disabled = false;
+        }
+      });
+    </script>
   </body>
 </html>

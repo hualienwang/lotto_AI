@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify, request, Response, redirect, render_template
 from datetime import datetime
-from .database import get_db, load_draws
+from pathlib import Path
+from .database import get_db, load_draws, DATABASE
+from .fetch_lotto539_history import DEFAULT_URL, fetch_html, parse_history, save_history
 from .predictor import LottoPredictor
 
 api_bp = Blueprint('api', __name__)
@@ -41,6 +43,21 @@ def add_manual():
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
+
+@api_bp.route('/api/fetch-history', methods=['POST'])
+def fetch_history():
+    try:
+        html = fetch_html(DEFAULT_URL)
+        records = parse_history(html)
+        inserted_count = save_history(Path(DATABASE), records)
+        return jsonify({
+            'success': True,
+            'message': f'抓取 {len(records)} 筆資料，新增 {inserted_count} 筆。',
+            'records': len(records),
+            'inserted_count': inserted_count,
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @api_bp.route('/api/next-period')
 def get_next_period():
