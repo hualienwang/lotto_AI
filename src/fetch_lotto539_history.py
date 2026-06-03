@@ -1,9 +1,10 @@
 import argparse
 import sqlite3
+import subprocess
+import sys
 from datetime import date
 from html.parser import HTMLParser
 from pathlib import Path
-
 
 BASE_URL = "https://www.taiwanlottery.com/lotto/result/traditional"
 
@@ -75,14 +76,37 @@ def fetch_html(url):
             "目前 Python 環境沒有 playwright。請先執行：python -m pip install playwright"
         ) from exc
 
+    # Try launching the browser; if the browser executable is missing,
+    # attempt to install Chromium via `playwright install chromium` and retry once.
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
-        try:
-            page = browser.new_page()
-            page.goto(url, wait_until="networkidle", timeout=60_000)
-            return page.content()
-        finally:
-            browser.close()
+        for attempt in range(2):
+            try:
+                browser = playwright.chromium.launch(headless=True)
+                try:
+                    page = browser.new_page()
+                    page.goto(url, wait_until="networkidle", timeout=60_000)
+                    return page.content()
+                finally:
+                    browser.close()
+            except Exception as exc:
+                msg = str(exc)
+                missing_indicator = (
+                    "Executable doesn't exist" in msg
+                    or "Please run the following command" in msg
+                    or ".cache/ms-playwright" in msg
+                )
+                if attempt == 0 and missing_indicator:
+                    try:
+                        subprocess.check_call(
+                            [sys.executable, "-m", "playwright", "install", "chromium"]
+                        )
+                    except subprocess.CalledProcessError:
+                        raise RuntimeError(
+                            "自動下載 Playwright 瀏覽器失敗，請在部署環境執行：python -m playwright install chromium"
+                        ) from exc
+                    # retry once after installation
+                    continue
+                raise
 
 
 def parse_history(html):
@@ -97,11 +121,19 @@ def parse_history(html):
         prize_table = tables[index + 2]
 
         data_row = next(
-            (row for row in info_table if row and row[0].isdigit() and len(row[0]) == 9),
+            (
+                row
+                for row in info_table
+                if row and row[0].isdigit() and len(row[0]) == 9
+            ),
             None,
         )
-        size_row = next((row for row in number_table if row and row[0] == "大小順序"), None)
-        winners_row = next((row for row in prize_table if row and row[0] == "中獎注數"), None)
+        size_row = next(
+            (row for row in number_table if row and row[0] == "大小順序"), None
+        )
+        winners_row = next(
+            (row for row in prize_table if row and row[0] == "中獎注數"), None
+        )
 
         if not data_row or not size_row or not winners_row:
             continue
@@ -116,7 +148,9 @@ def parse_history(html):
         )
 
     if not records:
-        raise RuntimeError("沒有解析到任何今彩539資料，請確認頁面格式或查詢網址是否改變。")
+        raise RuntimeError(
+            "沒有解析到任何今彩539資料，請確認頁面格式或查詢網址是否改變。"
+        )
 
     return records
 
@@ -124,16 +158,14 @@ def parse_history(html):
 def save_history(db_path, records):
     db_path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(db_path) as conn:
-        conn.execute(
-            """
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS history (
                 "期別" TEXT PRIMARY KEY,
                 "開獎日" TEXT NOT NULL,
                 "大小順序" TEXT NOT NULL,
                 "頭獎中獎注數" INTEGER NOT NULL
             )
-            """
-        )
+            """)
         conn.execute(
             'CREATE INDEX IF NOT EXISTS idx_history_draw_date ON history ("開獎日")'
         )
@@ -149,7 +181,9 @@ def save_history(db_path, records):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="抓取台彩今彩539歷史資料並寫入 SQLite。")
+    parser = argparse.ArgumentParser(
+        description="抓取台彩今彩539歷史資料並寫入 SQLite。"
+    )
     parser.add_argument("--url", default=DEFAULT_URL, help="台彩查詢網址")
     parser.add_argument(
         "--db",
@@ -162,7 +196,9 @@ def main():
     records = parse_history(html)
     inserted_count = save_history(Path(args.db), records)
 
-    print(f"頁面抓取 {len(records)} 筆資料，新增 {inserted_count} 筆到 {args.db} 的 history 表。")
+    print(
+        f"頁面抓取 {len(records)} 筆資料，新增 {inserted_count} 筆到 {args.db} 的 history 表。"
+    )
     print(f"最新期別：{records[0]['期別']}，最早期別：{records[-1]['期別']}")
 
 
