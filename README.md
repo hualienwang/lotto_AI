@@ -1,166 +1,157 @@
-# 今彩539開獎預測系統
+# 今彩539 開獎記錄 / 預測系統
 
-一個基於 Flask 的彩票開獎記錄管理與預測系統。
+這個專案是一個 Flask 應用程式，提供今彩 539 的歷史資料查詢、手動錄入、歷史抓取與預測頁面。
 
-## 功能特性
+## 目前狀態
 
-- 📊 **歷次開獎記錄** - 查詢並管理彩票開獎歷史
-- 🔮 **預測開獎** - 基於歷史數據的開獎預測
-- ✏️ **手動輸入** - 支持手動新增開獎記錄
-- 📥 **導出功能** - 將預測記錄導出為 CSV 格式
+- 後端：Flask 3.0.0
+- 生產伺服器：Gunicorn 21.2.0
+- 資料來源：台彩官方 JSON API（不再依賴 Playwright / 瀏覽器）
+- 資料庫：SQLite
+- 部署平台：Vercel（Python runtime）
 
-## 技術棧
+## 功能
 
-- **後端框架**: Flask 3.0
-- **數據庫**: SQLite
-- **生產伺服器**: Gunicorn
-- **前端**: HTML + JavaScript
+- 📊 查看歷史開獎紀錄
+- 🔄 抓取最新今彩539歷史資料（官方 API）
+- ✏️ 手動新增/覆蓋歷史紀錄
+- 🔮 預測頁面與模型入口
+- 📤 匯出 CSV
 
-## 本地運行
+## 目錄結構
 
-### 前置要求
+```text
+.
+├── app.py                  # Flask 入口
+├── requirements.txt        # Python 相依套件
+├── vercel.json             # Vercel 部署設定
+├── src/
+│   ├── database.py         # SQLite 連線與資料庫路徑
+│   ├── fetch_lotto539_history.py  # 抓取歷史資料
+│   ├── predictor.py        # 預測邏輯
+│   ├── routes.py           # API 與頁面路由
+│   └── utils.py
+└── templates/              # HTML 頁面
+```
 
-- Python 3.9+
-- pip
+## 本地開發
 
-### 安裝依賴
+### 1. 建立環境
 
 ```bash
+python -m venv .venv
+.\.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 啟動應用
+### 2. 啟動應用
 
-開發模式：
 ```bash
 python app.py
 ```
 
-應用將運行在 `http://localhost:5000`
+開啟：
 
-## 部署到 Vercel (推薦)
-
-### 前置條件
-
-1. 安裝 [Vercel CLI](https://vercel.com/download): `npm install -g vercel`
-2. 或者將項目推送至 GitHub 並在 Vercel 控制台導入。
-
-### 部署步驟 (使用 CLI)
-
-1. 在項目根目錄運行：
-   ```bash
-   vercel
-   ```
-2. 按照提示完成部署。
-
-### 部署步驟 (使用 GitHub)
-
-1. 將代碼推送到 GitHub 倉庫。
-2. 登入 [Vercel](https://vercel.com/) 並點擊 **Add New** > **Project**。
-3. 導入您的 GitHub 倉庫。
-4. Vercel 會自動識別 `vercel.json` 並進行部署。
-
-## 部署到 Render.com
-
-### 前置條件
-
-1. 在 [render.com](https://render.com) 上註冊帳號
-2. 將項目推送至 GitHub
-
-### 部署步驟
-
-1. 登入 Render.com 控制台
-2. 選擇 **New +** > **Web Service**
-3. 連接您的 GitHub 倉庫
-4. 配置如下：
-   - **Name**: lotto-ai
-   - **Runtime**: Python
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `gunicorn --workers 4 --worker-class sync --bind 0.0.0.0:$PORT app:app`
-5. 點擊 **Create Web Service** 進行部署
-
-### 或使用 render.yaml 部署
-
-本項目已包含 `render.yaml` 配置文件，Render.com 會自動讀取此文件進行部署。
+```text
+http://127.0.0.1:5000/
+```
 
 ## API 端點
 
-### 歷史記錄
+### 歷史資料
 
+```http
+GET /api/history?limit=10&start=115000001&end=115000200
 ```
-GET /api/history?limit=10&start=001&end=100
-```
 
-查詢彩票開獎記錄。
+### 手動新增紀錄
 
-**參數：**
-- `limit` (可選): 返回記錄數量
-- `start` (可選): 期數範圍開始
-- `end` (可選): 期數範圍結束
-
-### 新增記錄
-
-```
+```http
 POST /api/manual
 Content-Type: application/json
+```
 
+範例：
+
+```json
 {
-  "period": "001",
-  "numbers": "12,34,56,78,90",
-  "draw_date": "2026-01-01"
+  "period": "115000141",
+  "numbers": "39,32,35,1,4",
+  "draw_date": "2026-06-10"
 }
 ```
+
+### 抓取歷史資料
+
+```http
+POST /api/fetch-history
+```
+
+此路由會直接呼叫官方台彩 JSON API，並寫入 SQLite。
 
 ### 下一期期數
 
-```
+```http
 GET /api/next-period
 ```
 
-### 導出 CSV
+### 預測
 
+```http
+GET /api/predict?type=ai
 ```
+
+### 匯出 CSV
+
+```http
 POST /api/export-csv
 Content-Type: application/json
-
-{
-  "csvContent": "..."
-}
 ```
 
-## 文件結構
+## Vercel 部署
 
+### 1. 安裝 Vercel CLI
+
+```bash
+npm install -g vercel
 ```
-lotto_AI/
-├── app.py                 # Flask 主應用程序
-├── lotto-539.db          # SQLite 數據庫
-├── history.html          # 歷次開獎記錄頁面
-├── predict.html          # 預測開獎頁面
-├── manual.html           # 手動輸入頁面
-├── requirements.txt      # Python 依賴列表
-├── render.yaml           # Render.com 部署配置
-└── README.md             # 項目文檔
+
+### 2. 部署
+
+```bash
+vercel login
+vercel --prod
 ```
+
+### 3. 資料庫寫入注意事項
+
+Vercel 是 serverless 環境，檔案系統通常是暫時且可能是唯讀的。
+
+目前程式已改為：
+
+- 預設使用系統暫存資料夾中的 SQLite 檔案：`/tmp/lotto-539.db`
+- 若需要指定位置，可設定環境變數：
+
+```bash
+LOTTO_DB_PATH=/tmp/lotto-539.db
+```
+
+> 如果你要在 Vercel 上保留長期資料，建議改用外部資料庫（例如 Neon / Supabase / Vercel Postgres）。
+
+## 重要變更說明
+
+這個版本已移除歷史抓取流程中對 Playwright / 瀏覽器安裝的依賴，改為直接使用官方資料 API，避免 Vercel 部署時因瀏覽器執行環境失敗。
 
 ## 常見問題
 
-### 數據持久化
+### 1. 為什麼抓取歷史資料不再用 Playwright？
 
-Vercel 與 Render.com 的應用實例均使用臨時/唯讀文件系統。SQLite 數據庫文件（`lotto-539.db`）雖然會被包含在部署中，但**在運行時所做的任何修改（如手動新增記錄）都不會被永久儲存**，且會在應用重啟或更新時丟失。
+因為 Vercel 的執行環境不適合依賴瀏覽器安裝與 headless browser。官方 API 可直接取得歷史資料，速度更穩定也更適合部署。
 
-**建議方案：**
-1. **外部數據庫 (推薦):** 遷移至 Vercel Postgres、Neon 或 Supabase 等雲端數據庫。
-2. **靜態更新:** 在本地修改 `lotto-539.db` 後，再次推送代碼觸發部署。
-3. **雲存儲:** 將數據庫文件存放在 AWS S3 或 Google Cloud Storage。
+### 2. Vercel 上資料會不會持久保存？
 
-### 環境變量
+不保證。serverless 環境的檔案可能會在重新啟動或部署後消失。若需要長期保存資料，請使用外部資料庫。
 
-如需添加環境變量，在 Render.com 控制台的 **Environment** 選項卡中設置。
-
-## 許可證
+## 授權
 
 MIT
-
-## 聯絡方式
-
-如有問題或建議，歡迎提交 Issue 或 Pull Request。
