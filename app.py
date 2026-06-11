@@ -1,8 +1,11 @@
 from flask import Flask, g
+
+from src.pages import page_bp
 from src.routes import api_bp
 
 app = Flask(__name__)
 app.register_blueprint(api_bp)
+app.register_blueprint(page_bp)
 
 @app.teardown_appcontext
 def close_connection(exception):

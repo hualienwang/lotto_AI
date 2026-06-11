@@ -1,7 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from flask import Blueprint, Response, jsonify, redirect, render_template, request
+from flask import Blueprint, Response, jsonify, request
 
 from .database import DATABASE, get_db, load_draws
 from .fetch_lotto539_history import DEFAULT_URL, fetch_history_records, save_history
@@ -97,22 +97,3 @@ def export_csv():
         headers={'Content-Disposition': f'attachment; filename="{filename}"'}
     )
 
-@api_bp.route('/')
-def index():
-    return render_template('index.html')
-
-@api_bp.route('/history.html')
-def history_page():
-    return render_template('history.html')
-
-@api_bp.route('/predict.html')
-def predict_page():
-    return render_template('predict.html')
-
-@api_bp.route('/manual.html')
-def manual_page():
-    return render_template('manual.html')
-
-@api_bp.route('/pridict.html')
-def predict_typo():
-    return redirect('/predict.html', code=302)

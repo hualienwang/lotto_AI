@@ -7,8 +7,9 @@
 - 後端：Flask 3.0.0
 - 生產伺服器：Gunicorn 21.2.0
 - 資料來源：台彩官方 JSON API（不再依賴 Playwright / 瀏覽器）
-- 資料庫：SQLite
+- 資料庫：SQLite（預設寫入系統暫存資料夾）
 - 部署平台：Vercel（Python runtime）
+- 專案結構：Flask Blueprint 分離 API / 頁面路由，靜態資源放在 static/
 
 ## 功能
 
@@ -27,10 +28,14 @@
 ├── vercel.json             # Vercel 部署設定
 ├── src/
 │   ├── database.py         # SQLite 連線與資料庫路徑
-│   ├── fetch_lotto539_history.py  # 抓取歷史資料
+│   ├── fetch_lotto539_history.py  # 抓取歷史資料（官方 API）
+│   ├── pages.py            # 頁面 Blueprint（/、/history.html、/predict.html、/manual.html）
 │   ├── predictor.py        # 預測邏輯
-│   ├── routes.py           # API 與頁面路由
+│   ├── routes.py           # API Blueprint（/api/...）
 │   └── utils.py
+├── static/
+│   ├── css/                # 頁面樣式檔
+│   └── js/                 # 前端互動腳本
 └── templates/              # HTML 頁面
 ```
 
@@ -140,7 +145,7 @@ LOTTO_DB_PATH=/tmp/lotto-539.db
 
 ## 重要變更說明
 
-這個版本已移除歷史抓取流程中對 Playwright / 瀏覽器安裝的依賴，改為直接使用官方資料 API，避免 Vercel 部署時因瀏覽器執行環境失敗。
+這個版本已移除歷史抓取流程中對 Playwright / 瀏覽器安裝的依賴，改為直接使用官方資料 API，避免 Vercel 部署時因瀏覽器執行環境失敗；同時將頁面路由與 API 路由拆成 Blueprint，並將前端樣式與腳本整理至 static/。
 
 ## 常見問題
 
