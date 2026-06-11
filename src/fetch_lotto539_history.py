@@ -1,10 +1,11 @@
 import argparse
+import json
 import sqlite3
-import subprocess
-import sys
 from datetime import date
 from html.parser import HTMLParser
 from pathlib import Path
+
+import requests
 
 BASE_URL = "https://www.taiwanlottery.com/lotto/result/traditional"
 
@@ -70,43 +71,61 @@ class TableTextParser(HTMLParser):
 
 def fetch_html(url):
     try:
-        from playwright.sync_api import sync_playwright
-    except ImportError as exc:
-        raise RuntimeError(
-            "目前 Python 環境沒有 playwright。請先執行：python -m pip install playwright"
-        ) from exc
+        response = requests.get(
+            url,
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=60,
+            verify=False,
+        )
+        response.raise_for_status()
+        return response.text
+    except requests.RequestException as exc:
+        raise RuntimeError("抓取歷史資料失敗，請稍後再試。") from exc
 
-    # Try launching the browser; if the browser executable is missing,
-    # attempt to install Chromium via `playwright install chromium` and retry once.
-    with sync_playwright() as playwright:
-        for attempt in range(2):
-            try:
-                browser = playwright.chromium.launch(headless=True)
-                try:
-                    page = browser.new_page()
-                    page.goto(url, wait_until="networkidle", timeout=60_000)
-                    return page.content()
-                finally:
-                    browser.close()
-            except Exception as exc:
-                msg = str(exc)
-                missing_indicator = (
-                    "Executable doesn't exist" in msg
-                    or "Please run the following command" in msg
-                    or ".cache/ms-playwright" in msg
-                )
-                if attempt == 0 and missing_indicator:
-                    try:
-                        subprocess.check_call(
-                            [sys.executable, "-m", "playwright", "install", "chromium"]
-                        )
-                    except subprocess.CalledProcessError:
-                        raise RuntimeError(
-                            "自動下載 Playwright 瀏覽器失敗，請在部署環境執行：python -m playwright install chromium"
-                        ) from exc
-                    # retry once after installation
-                    continue
-                raise
+
+def fetch_history_records(today=None):
+    start_month = shift_month(today or date.today(), -2)
+    end_month = shift_month(today or date.today(), 0)
+
+    try:
+        response = requests.get(
+            "https://api.taiwanlottery.com/TLCAPIWeB/Lottery/Daily539Result",
+            params={
+                "period": "",
+                "month": start_month,
+                "endMonth": end_month,
+                "pageNum": 1,
+                "pageSize": 200,
+            },
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=60,
+            verify=False,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except requests.RequestException as exc:
+        raise RuntimeError("抓取歷史資料失敗，請稍後再試。") from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("抓取歷史資料格式錯誤，請稍後再試。") from exc
+
+    if payload.get("rtCode") != 0:
+        raise RuntimeError(payload.get("rtMsg") or "抓取歷史資料失敗，請稍後再試。")
+
+    records = []
+    for item in payload.get("content", {}).get("daily539Res", []):
+        records.append(
+            {
+                "期別": str(item.get("period", "")),
+                "開獎日": item.get("lotteryDate", "")[:10],
+                "大小順序": " ".join(str(x) for x in item.get("drawNumberAppear", [])),
+                "頭獎中獎注數": int(item.get("d539JackpotAssign", {}).get("winnerCount", 0)),
+            }
+        )
+
+    if not records:
+        raise RuntimeError("沒有解析到任何今彩539資料，請確認查詢條件是否正確。")
+
+    return records
 
 
 def parse_history(html):
