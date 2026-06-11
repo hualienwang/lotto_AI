@@ -1,7 +1,9 @@
-from flask import Blueprint, jsonify, request, Response, redirect, render_template
 from datetime import datetime
 from pathlib import Path
-from .database import get_db, load_draws, DATABASE
+
+from flask import Blueprint, Response, jsonify, redirect, render_template, request
+
+from .database import DATABASE, get_db, load_draws
 from .fetch_lotto539_history import DEFAULT_URL, fetch_history_records, save_history
 from .predictor import LottoPredictor
 

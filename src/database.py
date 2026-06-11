@@ -1,13 +1,20 @@
+import os
 import sqlite3
+import tempfile
+from pathlib import Path
+
 from flask import g
+
 from .utils import parse_numbers
 
-DATABASE = 'lotto-539.db'
+DATABASE = Path(os.environ.get('LOTTO_DB_PATH', Path(tempfile.gettempdir()) / 'lotto-539.db'))
+
 
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
+        DATABASE.parent.mkdir(parents=True, exist_ok=True)
+        db = g._database = sqlite3.connect(str(DATABASE))
         db.row_factory = sqlite3.Row
     return db
 
