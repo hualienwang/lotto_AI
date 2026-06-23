@@ -174,6 +174,13 @@ def parse_history(html):
     return records
 
 
+def resolve_db_path(db_path):
+    db_path = Path(db_path)
+    if not db_path.is_absolute():
+        db_path = Path(__file__).resolve().parent.parent / db_path
+    return db_path
+
+
 def save_history(db_path, records):
     db_path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(db_path) as conn:
@@ -203,7 +210,11 @@ def main():
     parser = argparse.ArgumentParser(
         description="抓取台彩今彩539歷史資料並寫入 SQLite。"
     )
-    parser.add_argument("--url", default=DEFAULT_URL, help="台彩查詢網址")
+    parser.add_argument(
+        "--url",
+        default="",
+        help="(選填) 台彩查詢網址。若留空則使用官方 API 取得歷史資料。",
+    )
     parser.add_argument(
         "--db",
         default="lotto-539.db",
@@ -211,12 +222,17 @@ def main():
     )
     args = parser.parse_args()
 
-    html = fetch_html(args.url)
-    records = parse_history(html)
-    inserted_count = save_history(Path(args.db), records)
+    if args.url:
+        html = fetch_html(args.url)
+        records = parse_history(html)
+    else:
+        records = fetch_history_records()
+
+    db_path = resolve_db_path(args.db)
+    inserted_count = save_history(db_path, records)
 
     print(
-        f"頁面抓取 {len(records)} 筆資料，新增 {inserted_count} 筆到 {args.db} 的 history 表。"
+        f"抓取 {len(records)} 筆資料，新增 {inserted_count} 筆到 {db_path} 的 history 表。"
     )
     print(f"最新期別：{records[0]['期別']}，最早期別：{records[-1]['期別']}")
 
