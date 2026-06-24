@@ -8,6 +8,8 @@ from pathlib import Path
 import requests
 
 BASE_URL = "https://www.taiwanlottery.com/lotto/result/traditional"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_DB_PATH = PROJECT_ROOT / "lotto-539.db"
 
 
 def shift_month(day, month_delta):
@@ -175,9 +177,12 @@ def parse_history(html):
 
 
 def resolve_db_path(db_path):
+    if not db_path:
+        return DEFAULT_DB_PATH
+
     db_path = Path(db_path)
     if not db_path.is_absolute():
-        db_path = Path(__file__).resolve().parent.parent / db_path
+        db_path = PROJECT_ROOT / db_path
     return db_path
 
 
@@ -217,7 +222,7 @@ def main():
     )
     parser.add_argument(
         "--db",
-        default="lotto-539.db",
+        default="",
         help="輸出的 SQLite 資料庫路徑，預設為 lotto-539.db",
     )
     args = parser.parse_args()

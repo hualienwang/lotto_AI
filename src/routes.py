@@ -1,10 +1,14 @@
 from datetime import datetime
-from pathlib import Path
 
 from flask import Blueprint, Response, jsonify, request
 
-from .database import DATABASE, get_db, load_draws
-from .fetch_lotto539_history import DEFAULT_URL, fetch_history_records, save_history
+from .database import get_db, load_draws
+from .fetch_lotto539_history import (
+    DEFAULT_DB_PATH,
+    DEFAULT_URL,
+    fetch_history_records,
+    save_history,
+)
 from .predictor import LottoPredictor
 
 api_bp = Blueprint('api', __name__)
@@ -50,7 +54,7 @@ def add_manual():
 def fetch_history():
     try:
         records = fetch_history_records()
-        inserted_count = save_history(Path(DATABASE), records)
+        inserted_count = save_history(DEFAULT_DB_PATH, records)
         return jsonify({
             'success': True,
             'message': f'抓取 {len(records)} 筆資料，新增 {inserted_count} 筆。',

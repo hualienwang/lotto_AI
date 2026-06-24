@@ -1,41 +1,19 @@
 import os
-import shutil
 import sqlite3
-import tempfile
 from pathlib import Path
 
 from flask import g
 
 from .utils import parse_numbers
 
-DATABASE = Path(os.environ.get('LOTTO_DB_PATH', Path(tempfile.gettempdir()) / 'lotto-539.db'))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATABASE = Path(os.environ.get('LOTTO_DB_PATH', PROJECT_ROOT / 'lotto-539.db'))
 
 
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         DATABASE.parent.mkdir(parents=True, exist_ok=True)
-        
-        # Check if we need to initialize the temp database from the pre-populated template in the project root
-        need_copy = not DATABASE.exists() or DATABASE.stat().st_size == 0
-        if not need_copy:
-            try:
-                temp_conn = sqlite3.connect(str(DATABASE))
-                cursor = temp_conn.cursor()
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='history'")
-                if not cursor.fetchone():
-                    need_copy = True
-                temp_conn.close()
-            except Exception:
-                need_copy = True
-
-        if need_copy:
-            project_db = Path(__file__).resolve().parent.parent / 'lotto-539.db'
-            if project_db.exists() and project_db.stat().st_size > 0:
-                try:
-                    shutil.copy2(project_db, DATABASE)
-                except Exception:
-                    pass
 
         db = g._database = sqlite3.connect(str(DATABASE))
         db.row_factory = sqlite3.Row
