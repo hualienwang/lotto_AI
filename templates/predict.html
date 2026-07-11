@@ -24,7 +24,7 @@
           <p class="eyebrow">Prediction Lab</p>
           <h1>預測號碼工作台</h1>
         </div>
-        <p class="summary">選擇分析模式後產生五個參考號碼，並在同頁保留本次瀏覽的預測記錄。</p>
+        <p class="summary">選擇分析模式後產生五組參考號碼，並用最近歷史回測檢查模型表現。</p>
       </section>
 
       <section class="workspace">
@@ -40,7 +40,7 @@
               <option value="cooccurrence">共現矩陣預測</option>
               <option value="pattern">版路分析預測</option>
               <option value="balanced">均衡分佈預測</option>
-              <option value="ensemble">整合策略預測</option>
+              <option value="ensemble" selected>整合策略預測</option>
             </select>
           </label>
           <button onclick="generatePrediction()">生成預測號碼</button>
@@ -53,6 +53,19 @@
           </div>
           <div class="balls" id="predictNumbers"></div>
           <p class="model-note" id="modelNote"></p>
+          <div class="combo-grid" id="predictionSets"></div>
+          <section class="backtest" id="backtestPanel">
+            <div class="backtest-head">
+              <h3>最近回測</h3>
+              <span id="bestBacktest"></span>
+            </div>
+            <div class="detail-grid compact">
+              <div class="detail"><span>回測期數</span><strong id="backtestRounds">0</strong></div>
+              <div class="detail"><span>平均命中</span><strong id="averageHits">0</strong></div>
+              <div class="detail"><span>隨機基準</span><strong id="baselineHits">0</strong></div>
+            </div>
+            <div class="distribution" id="hitDistribution"></div>
+          </section>
           <div class="detail-grid">
             <div class="detail"><span>預測期次</span><strong id="predictPeriod"></strong></div>
             <div class="detail"><span>預測方式</span><strong id="predictMethod"></strong></div>

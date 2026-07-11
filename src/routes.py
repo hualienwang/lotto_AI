@@ -73,7 +73,7 @@ def get_next_period():
 
 @api_bp.route('/api/predict')
 def predict_numbers():
-    prediction_type = request.args.get('type', 'ai')
+    prediction_type = request.args.get('type', 'ensemble')
     draws = load_draws()
     if len(draws) < 5:
         return jsonify({
