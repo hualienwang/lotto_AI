@@ -1,3 +1,4 @@
+
 import csv
 from pathlib import Path
 
@@ -60,7 +61,7 @@ given_numbers, latest_csv = load_given_numbers_from_latest_csv()
 missing = find_missing_numbers(given_numbers)
 
 print(f"讀取檔案：{latest_csv}")
-print("CSV 中的預測號碼：")
+print(f"CSV 中的預測號碼 len：{len(given_numbers)}")
 print([f"{num:02d}" for num in given_numbers])
-print("未出現的號碼：")
+print(f"未出現的號碼 len：{len(missing)}")
 print([f"{num:02d}" for num in missing])
